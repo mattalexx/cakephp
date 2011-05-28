@@ -103,6 +103,7 @@ class L10n extends Object {
 								/* Arabic */ 'ara' => 'ar',
 								/* Armenian - Armenia */ 'hye' => 'hy',
 								/* Basque */ 'baq' => 'eu',
+								/* Tibetan */ 'bod' => 'bo',
 								/* Bosnian */ 'bos' => 'bs',
 								/* Bulgarian */ 'bul' => 'bg',
 								/* Byelorussian */ 'bel' => 'be',
