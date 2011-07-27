@@ -878,6 +878,9 @@ class DboSource extends DataSource {
 							$data = $model->{$className}->afterFind(array(array($className => $results[$i][$className])), false);
 
 							foreach ($model->{$className}->Behaviors->_attached as $behavior_name) {
+								if ($behavior_name === 'Containable') {
+									continue;
+								}
 								$behavior = $model->{$className}->Behaviors->{$behavior_name};
 								if (method_exists($behavior, 'afterFind') && $filtered_data = $behavior->afterFind($model->{$className}, $data, false)) {
 									$data = $filtered_data;
@@ -1049,6 +1052,9 @@ class DboSource extends DataSource {
 						$resultSet[$i][$association] = $linkModel->afterFind($resultSet[$i][$association], false);
 
 						foreach($linkModel->Behaviors->_attached as $behavior_name) {
+							if ($behavior_name === 'Containable') {
+								continue;
+							}
 							$behavior = $linkModel->Behaviors->{$behavior_name};
 							if (method_exists($behavior, 'afterfind') && $filtered_data = $behavior->afterFind($linkModel, $resultSet[$i][$association], false)) {
 								$resultSet[$i][$association] = $filtered_data;
