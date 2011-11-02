@@ -5,12 +5,12 @@
  * PHP versions 4 and 5
  *
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
- * Copyright 2005-2010, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright 2005-2010, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @copyright     Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
  * @link          http://cakephp.org CakePHP(tm) Project
  * @package       cake
  * @subpackage    cake.cake.libs.model.datasources
@@ -776,7 +776,7 @@ class DboSource extends DataSource {
 		$queryData = $this->__scrubQueryData($queryData);
 
 		$null = null;
-		$array = array();
+		$array = array('callbacks' => $queryData['callbacks']);
 		$linkedModels = array();
 		$this->__bypass = false;
 		$this->__booleans = array();
@@ -827,7 +827,11 @@ class DboSource extends DataSource {
 			return false;
 		}
 
-		$filtered = $this->__filterResults($resultSet, $model);
+		$filtered = array();
+
+		if ($queryData['callbacks'] === true || $queryData['callbacks'] === 'after') {
+			$filtered = $this->__filterResults($resultSet, $model);
+		}
 
 		if ($model->recursive > -1) {
 			foreach ($_associations as $type) {
@@ -855,7 +859,9 @@ class DboSource extends DataSource {
 					}
 				}
 			}
-			$this->__filterResults($resultSet, $model, $filtered);
+			if ($queryData['callbacks'] === true || $queryData['callbacks'] === 'after') {
+				$this->__filterResults($resultSet, $model, $filtered);
+			}
 		}
 
 		if (!is_null($recursive)) {
@@ -969,7 +975,9 @@ class DboSource extends DataSource {
 						}
 					}
 				}
-				$this->__filterResults($fetch, $model);
+				if ($queryData['callbacks'] === true || $queryData['callbacks'] === 'after') {
+					$this->__filterResults($fetch, $model);
+				}
 				return $this->__mergeHasMany($resultSet, $fetch, $association, $model, $linkModel, $recursive);
 			} elseif ($type === 'hasAndBelongsToMany') {
 				$ins = $fetch = array();
@@ -1313,7 +1321,7 @@ class DboSource extends DataSource {
 					$query = array_merge(array('order' => $assocData['order'], 'limit' => $assocData['limit']), $query);
 				} else {
 					$join = array(
-						'table' => $this->fullTableName($linkModel),
+						'table' => $linkModel,
 						'alias' => $alias,
 						'type' => isset($assocData['type']) ? $assocData['type'] : 'LEFT',
 						'conditions' => trim($this->conditions($conditions, true, false, $model))
@@ -1352,7 +1360,7 @@ class DboSource extends DataSource {
 					$joinKeys = array($assocData['foreignKey'], $assocData['associationForeignKey']);
 					list($with, $joinFields) = $model->joinModel($assocData['with'], $joinKeys);
 
-					$joinTbl = $this->fullTableName($model->{$with});
+					$joinTbl = $model->{$with};
 					$joinAlias = $joinTbl;
 
 					if (is_array($joinFields) && !empty($joinFields)) {
@@ -1362,8 +1370,8 @@ class DboSource extends DataSource {
 						$joinFields = array();
 					}
 				} else {
-					$joinTbl = $this->fullTableName($assocData['joinTable']);
-					$joinAlias = $joinTbl;
+					$joinTbl = $assocData['joinTable'];
+					$joinAlias = $this->fullTableName($assocData['joinTable']);
 				}
 				$query = array(
 					'conditions' => $assocData['conditions'],
@@ -1451,6 +1459,9 @@ class DboSource extends DataSource {
 		}
 		if (!empty($data['conditions'])) {
 			$data['conditions'] = trim($this->conditions($data['conditions'], true, false));
+		}
+		if (!empty($data['table'])) {
+			$data['table'] = $this->fullTableName($data['table']);
 		}
 		return $this->renderJoinStatement($data);
 	}
@@ -1746,7 +1757,7 @@ class DboSource extends DataSource {
 			if (isset($model->{$assoc}) && $model->useDbConfig == $model->{$assoc}->useDbConfig) {
 				$assocData = $model->getAssociated($assoc);
 				$join[] = $this->buildJoinStatement(array(
-					'table' => $this->fullTableName($model->{$assoc}),
+					'table' => $model->{$assoc},
 					'alias' => $assoc,
 					'type' => isset($assocData['type']) ? $assocData['type'] : 'LEFT',
 					'conditions' => trim($this->conditions(
@@ -1927,6 +1938,9 @@ class DboSource extends DataSource {
 			if (empty($data[$key])) {
 				$data[$key] = array();
 			}
+		}
+		if (!array_key_exists('callbacks', $data)) {
+			$data['callbacks'] = null;
 		}
 		return $data;
 	}
@@ -2255,8 +2269,8 @@ class DboSource extends DataSource {
  * @access private
  */
 	function __parseKey(&$model, $key, $value) {
-		$operatorMatch = '/^((' . implode(')|(', $this->__sqlOps);
-		$operatorMatch .= '\\x20)|<[>=]?(?![^>]+>)\\x20?|[>=!]{1,3}(?!<)\\x20?)/is';
+		$operatorMatch = '/^(((' . implode(')|(', $this->__sqlOps);
+		$operatorMatch .= ')\\x20?)|<[>=]?(?![^>]+>)\\x20?|[>=!]{1,3}(?!<)\\x20?)/is';
 		$bound = (strpos($key, '?') !== false || (is_array($value) && strpos($key, ':') !== false));
 
 		if (!strpos($key, ' ')) {

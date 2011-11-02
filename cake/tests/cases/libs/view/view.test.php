@@ -5,12 +5,12 @@
  * PHP versions 4 and 5
  *
  * CakePHP(tm) Tests <http://book.cakephp.org/view/1196/Testing>
- * Copyright 2005-2010, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  *  Licensed under The Open Group Test Suite License
  *  Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright 2005-2010, Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @copyright     Copyright 2005-2011, Cake Software Foundation, Inc. (http://cakefoundation.org)
  * @link          http://book.cakephp.org/view/1196/Testing CakePHP(tm) Tests
  * @package       cake
  * @subpackage    cake.tests.cases.libs
@@ -488,6 +488,17 @@ class ViewTest extends CakeTestCase {
 	}
 
 /**
+ * Test that alternate extensions work with duplicated elements.
+ *
+ * @return void
+ */
+	function testElementExtensions() {
+		$this->View->ext = '.xml';
+		$result = $this->View->element('test_element');
+		$this->assertEqual(trim($result), '<p>test element</p>');
+	}
+
+/**
  * test that additional element viewVars don't get overwritten with helpers.
  *
  * @return void
@@ -751,13 +762,12 @@ class ViewTest extends CakeTestCase {
 		Configure::write('Cache.check', true);
 
 		$Controller =& new ViewPostsController();
-		$Controller->cacheAction = '1 day';
+		$Controller->cacheAction = '+1 day';
 		$View =& new View($Controller);
 		$View->loaded['cache'] = new ViewTestMockCacheHelper();
 		$View->loaded['cache']->expectCallCount('cache', 2);
 
-		$result = $View->render('index');
-		$this->assertPattern('/posts index/', $result);
+		$View->render('index');
 
 		Configure::write('Cache.check', $_check);
 	}
